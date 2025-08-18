@@ -1,0 +1,32 @@
+import { useEffect, useState } from "react";
+
+export default function Home() {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((res) => res.json())
+      .then(setCategories);
+  }, []);
+
+  return (
+    <main style={{ fontFamily: "sans-serif", margin: "2rem" }}>
+      <h1>Goodnews</h1>
+      {!categories.length && <p>Loading...</p>}
+      {categories.map((cat) => (
+        <section key={cat.title} style={{ marginBottom: "2rem" }}>
+          <h2>{cat.title}</h2>
+          <ul>
+            {cat.links.map((link) => (
+              <li key={link.url}>
+                <a href={link.url} target="_blank" rel="noopener noreferrer">
+                  {link.name}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </main>
+  );
+}
