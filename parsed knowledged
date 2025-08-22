@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Networking",
+    "links": [
+      { "name": "Awesome Networking", "url": "https://github.com/awesome/networking" }
+    ]
+  },
+  {
+    "title": "Security",
+    "links": [
+      { "name": "Awesome Security", "url": "https://github.com/awesome/security" }
+    ]
+  }
+]
