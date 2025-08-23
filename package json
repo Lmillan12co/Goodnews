@@ -13,3 +13,8 @@
     "react-dom": "latest"
   }
 }
+"scripts": {
+  "dev": "solid-start dev",
+  "build": "solid-start build",
+  "start": "solid-start start"
+}
