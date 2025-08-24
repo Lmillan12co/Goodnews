@@ -95,9 +95,6 @@ o si hay script en el root:
 4. Tokens / permisos:
    - Para preview necesitas un token de lectura con permisos adecuados. Mantenlo en variables de entorno del servidor (no expuesto en el cliente).
 
-Si quieres, puedo inspeccionar los archivos relevantes (por ejemplo `pages/api/preview`, `lib/sanity`, `studio/schemas`) y darte instrucciones exactas adaptadas al código del repo.
-
----
 
 ## Construir y desplegar (Vercel)
 
