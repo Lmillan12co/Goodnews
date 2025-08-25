@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goodnews - Noticias del Mundo</title>
+    <!-- Tailwind CSS CDN para un diseño responsivo y limpio -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para los scrollbars */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .truncate-2-lines {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .truncate-3-lines {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center">
+
+    <!-- Encabezado de la aplicación -->
+    <header class="w-full bg-white shadow-lg p-6 flex flex-col md:flex-row items-center justify-between sticky top-0 z-10">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4 md:mb-0">
+            Goodnews
+        </h1>
+        <!-- Formulario de búsqueda -->
+        <form id="search-form" class="w-full md:w-auto flex items-center space-x-2">
+            <div class="relative w-full">
+                <input type="text" id="search-input" placeholder="Buscar noticias..." class="w-full p-3 pl-10 pr-4 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <button id="saved-news-button" type="button" class="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors hidden sm:block">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+            </button>
+        </form>
+
+        <!-- Contenedor de usuario/autenticación -->
+        <div id="auth-container" class="mt-4 md:mt-0 flex items-center space-x-2">
+            <span id="user-info" class="text-sm text-gray-600 hidden"></span>
+            <button id="logout-button" class="bg-red-500 text-white p-2 rounded-lg font-semibold hover:bg-red-600 transition-colors text-sm hidden">Salir</button>
+            <button id="login-button" class="bg-blue-500 text-white p-2 rounded-lg font-semibold hover:bg-blue-600 transition-colors text-sm">Iniciar Sesión</button>
+        </div>
+    </header>
+
+    <!-- Modal de Autenticación (oculto por defecto) -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Iniciar Sesión</h2>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <input type="email" id="email-input" placeholder="Correo electrónico" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <input type="password" id="password-input" placeholder="Contraseña" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" id="auth-submit-button" class="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">Iniciar Sesión</button>
+                <div class="text-center text-sm text-gray-500">
+                    ¿No tienes una cuenta? <a href="#" id="toggle-form" class="text-blue-500 hover:underline font-semibold">Regístrate</a>
+                </div>
+            </form>
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="bg-white px-2 text-gray-500">o</span>
+                </div>
+            </div>
+            <button id="google-login-button" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center justify-center space-x-2">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                    <path d="M12.24 10.23a4.78 4.78 0 0 0-.25-1.5H12v2.4h5.68a6.04 6.04 0 0 1-2.61 3.91l.01.01.02.01.03.01a7.81 7.81 0 0 0 2.22-4.14h-2.1V10.23z" fill="#4285F4"/>
+                    <path d="M12 24c3.2 0 5.8-1.07 7.74-2.92l-2.02-1.92c-1.28.84-2.96 1.4-4.72 1.4-3.5 0-6.42-2.35-7.48-5.54h-2.02v1.92A11.95 11.95 0 0 0 12 24z" fill="#34A853"/>
+                    <path d="M4.52 14.5a7.8 7.8 0 0 1 0-5.01V7.57H2.5A9.97 9.97 0 0 0 0 12c0 1.62.43 3.16 1.23 4.54l3.29-2.04z" fill="#FBBC05"/>
+                    <path d="M12 4.58c1.78 0 3.32.6 4.54 1.77L19.46 3A11.95 11.95 0 0 0 12 0C8.5 0 5.58 2.35 4.52 5.54L6.54 7.5a7.48 7.48 0 0 1 5.46-2.92z" fill="#EA4335"/>
+                </svg>
+                <span>Iniciar Sesión con Google</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Modal de Guardado (oculto por defecto) -->
+    <div id="save-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Guardar Noticia</h2>
+                <button id="close-save-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <form id="save-form" class="space-y-4">
+                <div>
+                    <label for="collection-input" class="block text-sm font-medium text-gray-700">Nombre de la colección (opcional)</label>
+                    <input type="text" id="collection-input" placeholder="Ej: 'tecnología', 'deportes'" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1">
+                </div>
+                <button type="submit" id="save-submit-button" class="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition-colors">Guardar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Compartir (oculto por defecto) -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Compartir Noticia</h2>
+                <button id="close-share-modal" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Copia el siguiente enlace para compartir este artículo:</p>
+            <div class="relative">
+                <input type="text" id="share-link-input" readonly class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-sm cursor-text">
+                <button id="copy-button" class="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors">
+                    Copiar
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenedor principal para las noticias -->
+    <main class="container mx-auto p-4 md:p-8 flex-grow">
+        <!-- Contenedor de estado de la aplicación (cargando, errores, etc.) -->
+        <div id="status-message" class="text-center font-medium text-lg text-gray-600 my-8">
+            Cargando noticias...
+        </div>
+        
+        <!-- Grid para mostrar los artículos de noticias -->
+        <div id="news-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Los artículos de noticias se renderizarán aquí -->
+        </div>
+    </main>
+
+    <!-- Footer de la aplicación -->
+    <footer class="w-full bg-white text-center p-4 text-gray-500 text-sm mt-8">
+        <p>&copy; 2024 Goodnews. Todos los derechos reservados. Desarrollado con ❤️</p>
+    </footer>
+
+    <script type="module">
+        // Importaciones de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, query, onSnapshot, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variables globales proporcionadas por el entorno de Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db, auth, userId;
+        let authReady = false;
+
+        // --- Configuración e Inicialización de Firebase ---
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Listener para el estado de autenticación
+        onAuthStateChanged(auth, (user) => {
+            authReady = true;
+            if (user) {
+                userId = user.uid;
+                document.getElementById('user-info').textContent = `ID de usuario: ${userId.substring(0, 8)}...`;
+                document.getElementById('user-info').classList.remove('hidden');
+                document.getElementById('logout-button').classList.remove('hidden');
+                document.getElementById('login-button').classList.add('hidden');
+                console.log(`Usuario autenticado: ${userId}`);
+                // Cargar noticias una vez que el usuario esté autenticado
+                const urlParams = new URLSearchParams(window.location.search);
+                const sharedDocId = urlParams.get('shared');
+                if (sharedDocId) {
+                    fetchSharedNews(sharedDocId);
+                } else {
+                    fetchNews();
+                }
+            } else {
+                userId = null;
+                document.getElementById('user-info').classList.add('hidden');
+                document.getElementById('logout-button').classList.add('hidden');
+                document.getElementById('login-button').classList.remove('hidden');
+                console.log("Usuario no autenticado.");
+                const urlParams = new URLSearchParams(window.location.search);
+                const sharedDocId = urlParams.get('shared');
+                if (sharedDocId) {
+                    fetchSharedNews(sharedDocId);
+                } else {
+                    fetchNews();
+                }
+            }
+        });
+        
+        // --- Lógica principal de la aplicación ---
+
+        // Referencias a elementos del DOM
+        const newsContainer = document.getElementById('news-container');
+        const searchForm = document.getElementById('search-form');
+        const searchInput = document.getElementById('search-input');
+        const statusMessage = document.getElementById('status-message');
+        const savedNewsButton = document.getElementById('saved-news-button');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const authModal = document.getElementById('auth-modal');
+        const closeModalButton = document.getElementById('close-modal');
+        const authForm = document.getElementById('auth-form');
+        const authSubmitButton = document.getElementById('auth-submit-button');
+        const toggleFormLink = document.getElementById('toggle-form');
+        const emailInput = document.getElementById('email-input');
+        const passwordInput = document.getElementById('password-input');
+        const googleLoginButton = document.getElementById('google-login-button');
+
+        const saveModal = document.getElementById('save-modal');
+        const closeSaveModalButton = document.getElementById('close-save-modal');
+        const saveForm = document.getElementById('save-form');
+        const collectionInput = document.getElementById('collection-input');
+        
+        const shareModal = document.getElementById('share-modal');
+        const closeShareModalButton = document.getElementById('close-share-modal');
+        const shareLinkInput = document.getElementById('share-link-input');
+        const copyButton = document.getElementById('copy-button');
+
+        // Estado de la aplicación
+        let showSavedNews = false;
+        let isSignUpForm = false;
+        let currentArticleToSave = null;
+        let currentArticleToShare = null;
+
+        // URL de la API de noticias. Reemplaza 'TU_API_KEY' con tu clave real.
+        const API_KEY = 'TU_API_KEY';
+        const API_URL = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`;
+
+        // Función para mostrar mensajes de estado al usuario
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.classList.toggle('text-red-500', isError);
+            statusMessage.classList.toggle('text-gray-600', !isError);
+        }
+
+        // Función para crear un elemento HTML para un artículo de noticia
+        function createNewsCard(article, isSaved = false, docId = null, isShared = false) {
+            if (!article.title || !article.description) return null;
+
+            const card = document.createElement('div');
+            card.className = 'block bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 relative';
+            
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'w-full h-48 overflow-hidden bg-gray-200';
+            const img = document.createElement('img');
+            img.src = article.urlToImage || 'https://placehold.co/600x400/E5E7EB/4B5563?text=Sin+Imagen';
+            img.alt = article.title;
+            img.className = 'w-full h-full object-cover transition-transform duration-300 hover:scale-105';
+            img.onerror = () => {
+                img.src = 'https://placehold.co/600x400/E5E7EB/4B5563?text=Sin+Imagen';
+            };
+            imageContainer.appendChild(img);
+
+            const content = document.createElement('div');
+            content.className = 'p-4';
+
+            const title = document.createElement('h2');
+            title.className = 'text-xl font-semibold text-gray-800 mb-2 truncate-2-lines';
+            title.textContent = article.title;
+
+            const description = document.createElement('p');
+            description.className = 'text-sm text-gray-600 mb-4 truncate-3-lines';
+            description.textContent = article.description;
+
+            const source = document.createElement('p');
+            source.className = 'text-xs text-gray-500 font-medium';
+            source.textContent = article.source?.name || 'Fuente desconocida';
+            
+            // Contenedor de botones
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'flex space-x-2 mt-2';
+
+            // Botón para guardar/eliminar
+            if (!isShared) { // No mostrar botones de guardar en la vista compartida
+                const saveButton = document.createElement('button');
+                const buttonColor = isSaved ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600';
+                const buttonText = isSaved ? 'Eliminar' : 'Guardar';
+                saveButton.className = `flex-1 text-white py-2 px-4 rounded-lg font-semibold transition-colors ${buttonColor}`;
+                saveButton.textContent = buttonText;
+                
+                saveButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    if (!userId) {
+                        showStatus("Inicia sesión para guardar noticias.", true);
+                        return;
+                    }
+                    if (isSaved) {
+                        await deleteSavedNews(docId);
+                    } else {
+                        currentArticleToSave = article;
+                        saveModal.classList.remove('hidden');
+                    }
+                });
+                buttonContainer.appendChild(saveButton);
+
+                // Botón para compartir (solo si la noticia está guardada)
+                if (isSaved) {
+                    const shareButton = document.createElement('button');
+                    shareButton.className = 'bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors';
+                    shareButton.textContent = 'Compartir';
+                    shareButton.addEventListener('click', () => {
+                        currentArticleToShare = { ...article, docId: docId };
+                        shareNews(currentArticleToShare);
+                    });
+                    buttonContainer.appendChild(shareButton);
+                }
+            }
+
+            // Enlace al artículo original
+            const articleLink = document.createElement('a');
+            articleLink.href = article.url;
+            articleLink.target = '_blank';
+            articleLink.rel = 'noopener noreferrer';
+            articleLink.className = 'block mt-2 text-blue-500 hover:underline text-center text-sm font-medium';
+            articleLink.textContent = 'Leer artículo completo';
+
+            content.appendChild(title);
+            content.appendChild(description);
+            content.appendChild(source);
+            if (!isShared) {
+                content.appendChild(buttonContainer);
+            }
+            content.appendChild(articleLink);
+
+            card.appendChild(imageContainer);
+            card.appendChild(content);
+
+            return card;
+        }
+
+        // Función para guardar noticias en Firestore
+        async function saveNews(article, collectionName) {
+            if (!userId) {
+                showStatus("No puedes guardar noticias sin iniciar sesión.", true);
+                return;
+            }
+            try {
+                const newsCollection = collection(db, `artifacts/${appId}/users/${userId}/saved_news`);
+                await addDoc(newsCollection, {
+                    title: article.title,
+                    description: article.description,
+                    url: article.url,
+                    urlToImage: article.urlToImage,
+                    source: article.source.name,
+                    collection: collectionName || 'general',
+                    savedAt: new Date()
+                });
+                showStatus('Noticia guardada con éxito.', false);
+                saveModal.classList.add('hidden');
+            } catch (error) {
+                console.error("Error al guardar la noticia:", error);
+                showStatus("Error al guardar la noticia.", true);
+            }
+        }
+
+        // Función para eliminar noticias de Firestore
+        async function deleteSavedNews(docId) {
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/saved_news`, docId));
+                showStatus('Noticia eliminada con éxito.', false);
+            } catch (error) {
+                console.error("Error al eliminar la noticia:", error);
+                showStatus("Error al eliminar la noticia.", true);
+            }
+        }
+        
+        // Función para compartir una noticia
+        async function shareNews(article) {
+            try {
+                const sharedNewsCollection = collection(db, `artifacts/${appId}/public/data/sharing_news`);
+                const docRef = await addDoc(sharedNewsCollection, {
+                    ...article,
+                    sharedBy: userId,
+                    sharedAt: new Date()
+                });
+                const shareLink = `${window.location.origin}${window.location.pathname}?shared=${docRef.id}`;
+                shareLinkInput.value = shareLink;
+                shareModal.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error al compartir la noticia:", error);
+                showStatus("Error al compartir la noticia.", true);
+            }
+        }
+
+        // Función para obtener y mostrar noticias desde la API
+        async function fetchNews(query = '') {
+            newsContainer.innerHTML = '';
+            showStatus('Cargando noticias...');
+            showSavedNews = false;
+
+            let url = API_URL;
+            if (query) {
+                url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(query)}&sortBy=relevancy&apiKey=${API_KEY}`;
+            }
+
+            if (API_KEY === 'TU_API_KEY') {
+                showStatus('Por favor, reemplaza "TU_API_KEY" con tu clave de API en el código.', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Error de red: ${response.status}`);
+                }
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    throw new Error(data.message);
+                }
+
+                if (data.articles.length === 0) {
+                    showStatus('No se encontraron noticias para esta búsqueda.');
+                    return;
+                }
+
+                showStatus('');
+                data.articles.forEach(article => {
+                    const card = createNewsCard(article);
+                    if (card) {
+                        newsContainer.appendChild(card);
+                    }
+                });
+            } catch (error) {
+                console.error("Error al obtener las noticias:", error);
+                showStatus(`Error: No se pudieron cargar las noticias. ${error.message}`, true);
+            }
+        }
+
+        // Función para obtener y mostrar noticias guardadas desde Firestore
+        function fetchSavedNews() {
+            newsContainer.innerHTML = '';
+            showStatus('Cargando noticias guardadas...');
+            showSavedNews = true;
+            
+            if (!userId) {
+                showStatus("Inicia sesión para acceder a las noticias guardadas.", true);
+                return;
+            }
+
+            const savedNewsCollection = collection(db, `artifacts/${appId}/users/${userId}/saved_news`);
+            const q = query(savedNewsCollection);
+            
+            onSnapshot(q, (snapshot) => {
+                newsContainer.innerHTML = '';
+                if (snapshot.empty) {
+                    showStatus('Aún no has guardado ninguna noticia.');
+                    return;
+                }
+                
+                showStatus('');
+                snapshot.forEach(doc => {
+                    const article = doc.data();
+                    const card = createNewsCard(article, true, doc.id);
+                    if (card) {
+                        newsContainer.appendChild(card);
+                    }
+                });
+            }, (error) => {
+                console.error("Error al obtener las noticias guardadas:", error);
+                showStatus("Error al cargar las noticias guardadas.", true);
+            });
+        }
+        
+        // Función para obtener y mostrar noticias compartidas
+        async function fetchSharedNews(docId) {
+            newsContainer.innerHTML = '';
+            showStatus('Cargando noticia compartida...');
+            
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/sharing_news`, docId);
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    const article = docSnap.data();
+                    showStatus('');
+                    const card = createNewsCard(article, false, null, true);
+                    if (card) {
+                        newsContainer.appendChild(card);
+                    }
+                } else {
+                    showStatus("La noticia compartida no existe.", true);
+                }
+            } catch (error) {
+                console.error("Error al cargar la noticia compartida:", error);
+                showStatus("Error al cargar la noticia compartida.", true);
+            }
+        }
+
+        // Event listeners para la UI
+        searchForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const query = searchInput.value.trim();
+            fetchNews(query);
+        });
+
+        savedNewsButton.addEventListener('click', () => {
+            fetchSavedNews();
+        });
+
+        loginButton.addEventListener('click', () => {
+            authModal.classList.remove('hidden');
+        });
+
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                showStatus("Has cerrado sesión.");
+                fetchNews();
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+                showStatus("Error al cerrar sesión.", true);
+            }
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            authModal.classList.add('hidden');
+        });
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            if (!email || !password) {
+                showStatus("Por favor, introduce correo y contraseña.", true);
+                return;
+            }
+
+            try {
+                if (isSignUpForm) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                authModal.classList.add('hidden');
+                showStatus("Inicio de sesión exitoso.", false);
+            } catch (error) {
+                console.error("Error de autenticación:", error);
+                showStatus(`Error de autenticación: ${error.message}`, true);
+            }
+        });
+
+        toggleFormLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignUpForm = !isSignUpForm;
+            authSubmitButton.textContent = isSignUpForm ? "Registrarse" : "Iniciar Sesión";
+            toggleFormLink.textContent = isSignUpForm ? "¿Ya tienes una cuenta? Inicia Sesión" : "¿No tienes una cuenta? Regístrate";
+        });
+        
+        googleLoginButton.addEventListener('click', async () => {
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                authModal.classList.add('hidden');
+                showStatus("Inicio de sesión con Google exitoso.", false);
+            } catch (error) {
+                console.error("Error con Google Auth:", error);
+                showStatus("Error al iniciar sesión con Google.", true);
+            }
+        });
+        
+        closeSaveModalButton.addEventListener('click', () => {
+            saveModal.classList.add('hidden');
+            currentArticleToSave = null;
+            collectionInput.value = '';
+        });
+
+        saveForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (currentArticleToSave) {
+                const collectionName = collectionInput.value.trim();
+                saveNews(currentArticleToSave, collectionName);
+            }
+        });
+        
+        closeShareModalButton.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+            currentArticleToShare = null;
+        });
+        
+        copyButton.addEventListener('click', () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            copyButton.textContent = '¡Copiado!';
+            setTimeout(() => {
+                copyButton.textContent = 'Copiar';
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
+
